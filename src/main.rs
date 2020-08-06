@@ -14,10 +14,10 @@ static GLOBAL: Jemalloc = Jemalloc;
 
 fn main() {
     let clock = SystemTime::now();
+    let mut matrix = box [[0u8; 10000]; 10000];
 
     loop {
         let loop_clock = SystemTime::now();
-        let mut matrix = box [[0u8; 10000]; 10000];
 
         matrix.par_iter_mut().for_each(|matrix_row| {
             matrix_row.par_iter_mut().for_each(|value| {
