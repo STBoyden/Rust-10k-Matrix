@@ -3,7 +3,11 @@
 use rand::Rng;
 use rand_xorshift::XorShiftRng;
 use rayon::prelude::*;
+// use std::sync::{Arc, Mutex};
 use std::time::SystemTime;
+
+#[macro_use]
+extern crate lazy_static;
 
 #[cfg(not(target_env = "msvc"))]
 use jemallocator::Jemalloc;
@@ -12,8 +16,12 @@ use jemallocator::Jemalloc;
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
 
-fn change_value(value: &mut u8, clock: &SystemTime) {
-    let seed = clock
+lazy_static! {
+    static ref CLOCK: SystemTime = SystemTime::now();
+}
+
+fn change_value(value: &mut u8) {
+    let seed = CLOCK
         .elapsed()
         .expect("Could not get elapsed time")
         .as_micros()
@@ -23,30 +31,17 @@ fn change_value(value: &mut u8, clock: &SystemTime) {
 }
 
 fn main() {
-    let clock = SystemTime::now();
-
+    let mut matrix = box [[0u8; 10000]; 10000];
     loop {
         let loop_clock = SystemTime::now();
-        let mut matrix = box [[0u8; 10000]; 10000];
 
-        let (matrix_first, matrix_last) = matrix.split_at_mut(5000);
-
-        rayon::join(
-            || {
-                matrix_first.par_iter_mut().for_each(|matrix_row| {
-                    matrix_row.par_iter_mut().for_each(|value| {
-                        change_value(value, &clock);
-                    })
+        matrix.splitn_mut(16, |_| true).for_each(|split| {
+            split.par_iter_mut().for_each(|matrix_row| {
+                matrix_row.iter_mut().for_each(|x| {
+                    change_value(x);
                 });
-            },
-            || {
-                matrix_last.par_iter_mut().for_each(|matrix_row| {
-                    matrix_row.par_iter_mut().for_each(|value| {
-                        change_value(value, &clock);
-                    })
-                });
-            },
-        );
+            });
+        });
 
         let elapsed = loop_clock
             .elapsed()

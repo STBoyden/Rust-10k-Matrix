@@ -11,7 +11,7 @@ rand = {version = "0.7", features = ["small_rng"]}
 # rand = "0.4"
 rayon = "*"
 rand_xorshift = "0.2"
-
+lazy_static = "1.4"
 
 [target.'cfg(not(target_env = "msvc"))'.dependencies]
 jemallocator = "0.3.2"
